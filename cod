@@ -1,0 +1,125 @@
+    import kotlin.system.exitProcess
+
+    enum class Values {
+        LENGTH,
+        WEIGHT,
+        TEMPERATURE;
+    }
+
+    enum class Units(val coefficient: Double, val type: Values, val names: List<String>) {
+        M(1.0, Values.LENGTH, listOf("m", "meter", "meters")),
+        KM(1000.0, Values.LENGTH, listOf("km", "kilometer", "kilometers")),
+        CM(0.01, Values.LENGTH, listOf("cm", "centimeter", "centimeters")),
+        MM(0.001, Values.LENGTH, listOf("mm", "millimeter", "millimeters")),
+        MI(1609.35, Values.LENGTH, listOf("mi", "mile", "miles")),
+        YD(0.9144, Values.LENGTH, listOf("yd", "yard", "yards")),
+        FT(0.3048, Values.LENGTH, listOf("ft", "foot", "feet")),
+        IN(0.0254, Values.LENGTH, listOf("in", "inch", "inches")),
+        G(1.0, Values.WEIGHT, listOf("g", "gram", "grams")),
+        KG(1000.0, Values.WEIGHT, listOf("kg", "kilogram", "kilograms")),
+        MG(0.001, Values.WEIGHT, listOf("mg", "milligram", "milligrams")),
+        LB(453.592, Values.WEIGHT, listOf("lb", "pound", "pounds")),
+        OZ(28.3495, Values.WEIGHT, listOf("oz", "ounce", "ounces")),
+        DC(0.0, Values.TEMPERATURE, listOf("dc", "degree Celsius", "degrees Celsius", "celsius", "c")),
+        DF(0.0, Values.TEMPERATURE, listOf("df", "degree Fahrenheit", "degrees Fahrenheit", "fahrenheit", "f")),
+        K(0.0, Values.TEMPERATURE, listOf("k", "kelvin", "kelvins"))
+    }
+
+    var x = 0.0
+    var startUnit = ""
+    var finalUnit = ""
+
+    fun main() {
+        start()
+        definition()
+        main()
+    }
+
+    fun start() {
+        println("Enter what you want to convert (or exit):")
+        try {
+            val entry = readln().lowercase()
+            val entryList = entry.split(" ")
+            if (entryList[0] == "exit") exitProcess(0)
+            if (try { entryList[0].toDouble(); true } catch (e: NumberFormatException) { false }) {
+                x = entryList[0].toDouble()
+            } else {
+                println("Parse error")
+                main()
+            }
+            when (entryList.lastIndex) {
+                5 -> {
+                    startUnit = "${entryList[1]} ${entryList[2].capitalize()}"
+                    finalUnit = "${entryList[4]} ${entryList[5].capitalize()}"
+                }
+                4 -> {
+                    if (entryList[1] == "degree" || entryList[1] == "degrees") {
+                        startUnit = "${entryList[1]} ${entryList[2].capitalize()}"
+                        finalUnit = entryList[4]
+                    }
+                    if (entryList[3] == "degrees" || entryList[3] == "degree") {
+                        startUnit = entryList[1]
+                        finalUnit = "${entryList[3]} ${entryList[4].capitalize()}"
+                    }
+                }
+                3 -> {
+                    startUnit = entryList[1]
+                    finalUnit = entryList[3]
+                }
+            }
+        } catch (e: IndexOutOfBoundsException) {
+            exitProcess(0)
+        } catch (e: NumberFormatException) {
+            exitProcess(0)
+        }
+    }
+
+    fun definition() {
+        val startUnitEnum = Units.values().find { unit -> startUnit in unit.names }
+        val finalUnitEnum = Units.values().find { unit -> finalUnit in unit.names }
+        val startUnitValue = startUnitEnum?.type
+        val finalUnitValue = finalUnitEnum?.type
+        if (startUnitValue == null) startUnit = "???" else startUnit = startUnitEnum.names[2]
+        if (finalUnitValue == null) finalUnit = "???" else finalUnit = finalUnitEnum.names[2]
+        if (startUnitValue != finalUnitValue || (startUnit == "???" || finalUnit == "???")) {
+            println("Conversion from $startUnit to $finalUnit is impossible")
+        } else {
+            if (startUnitValue == Values.LENGTH || startUnitValue == Values.WEIGHT) {
+                if (x < 0) {
+                    println("$startUnitValue shouldn't be negative")
+                } else {
+                    var result = 0.0
+                    if (finalUnitEnum != null) result = x * startUnitEnum.coefficient / finalUnitEnum.coefficient
+                    if (x == 1.0) startUnit = startUnitEnum.names[1]
+                    if (result == 1.0 && finalUnitEnum != null) finalUnit = finalUnitEnum.names[1]
+                    println("$x $startUnit is $result $finalUnit")
+                }
+            } else {
+                var result = 0.0
+                if (finalUnit in Units.DC.names) {
+                    when (startUnit) {
+                        in Units.DC.names -> result = x
+                        in Units.DF.names -> result = (x - 32.0) * 5.0 / 9.0
+                        in Units.K.names -> result = x - 273.15
+                    }
+                }
+                if (finalUnit in Units.DF.names) {
+                    when (startUnit) {
+                        in Units.DF.names -> result = x
+                        in Units.DC.names -> result = x * 9.0 / 5.0 + 32.0
+                        in Units.K.names -> result = x * 9.0 / 5.0 - 459.67
+                    }
+                }
+                if (finalUnit in Units.K.names) {
+                    when (startUnit) {
+                        in Units.K.names -> result = x
+                        in Units.DC.names -> result = x + 273.1
+                        in Units.DF.names -> result = (x + 459.67) * 5 / 9
+                    }
+                }
+                if (x == 1.0 && startUnitEnum != null) startUnit = startUnitEnum.names[1]
+                if (result == 1.0 && finalUnitEnum != null) finalUnit = finalUnitEnum.names[1]
+                println("$x $startUnit is $result $finalUnit")
+            }
+        }
+    }
